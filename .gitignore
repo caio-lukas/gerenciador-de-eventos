@@ -1,0 +1,20 @@
+# Node / React Native
+node_modules/
+.expo/
+npm-debug.*
+
+# Java / Spring Boot
+backend/target/
+backend/build/
+backend/.gradle/
+backend/.settings/
+backend/.classpath
+backend/.project
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Variáveis de ambiente
+.env
