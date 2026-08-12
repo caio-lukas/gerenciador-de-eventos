@@ -3,18 +3,21 @@ package br.com.neki.gerenciador_eventos.controller;
 import br.com.neki.gerenciador_eventos.dto.LoginRequestDTO;
 import br.com.neki.gerenciador_eventos.dto.LoginResponseDTO;
 import br.com.neki.gerenciador_eventos.dto.RegisterRequestDTO;
+import br.com.neki.gerenciador_eventos.entity.Admin;
+import br.com.neki.gerenciador_eventos.repository.AdminRepository;
 import br.com.neki.gerenciador_eventos.security.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/auth")
 @CrossOrigin(origins = "*")
 public class AuthController {
 
-    // todo: Implementar repositório do Admin
     @Autowired
     private AdminRepository adminRepository;
 

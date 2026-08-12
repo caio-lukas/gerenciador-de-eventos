@@ -1,5 +1,7 @@
 package br.com.neki.gerenciador_eventos.security;
 
+import br.com.neki.gerenciador_eventos.entity.Admin;
+import br.com.neki.gerenciador_eventos.repository.AdminRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,7 +21,6 @@ public class SecurityFilter extends OncePerRequestFilter {
     @Autowired
     private TokenService tokenService;
 
-    // todo: Implementar repositório do admin
     @Autowired
     private AdminRepository adminRepository;
 
@@ -31,7 +32,6 @@ public class SecurityFilter extends OncePerRequestFilter {
             var email = tokenService.validateToken(token);
 
             if (email != null) {
-                // todo: Implementar entidade Admin
                 Admin admin = adminRepository.findByEmail(email).orElse(null);
 
                 if (admin != null) {

@@ -1,5 +1,6 @@
 package br.com.neki.gerenciador_eventos.security;
 
+import br.com.neki.gerenciador_eventos.entity.Admin;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,7 +22,6 @@ public class TokenService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // todo: Implementar entidade Admin
     public String generateToken(Admin admin) {
         return Jwts.builder()
                 .setSubject(admin.getEmail())
