@@ -27,7 +27,7 @@ public class EventService {
         return new EventResponseDTO(eventoSalvo);
     }
 
-    public List<EventResponseDTO> listarTodo() {
+    public List<EventResponseDTO> listarTodos() {
         return eventRepository.findAll().stream()
                 .map(EventResponseDTO::new)
                 .toList();
