@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,12 +6,16 @@ import {
   TouchableOpacity, 
   KeyboardAvoidingView, 
   Platform,
-  Switch
+  Switch,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../App';
 import { Feather } from '@expo/vector-icons';
-import { colors } from '../../theme/colors'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../../services/api';
+import { colors } from '../../theme/colors';
 import { styles } from './style';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
@@ -25,6 +29,71 @@ export default function Login({ navigation }: Props) {
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [gravarSenha, setGravarSenha] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Efeito para carregar dados salvos caso "Gravar Senha" tenha sido ativado previamente
+  useEffect(() => {
+    carregarDadosSalvos();
+  }, []);
+
+  const carregarDadosSalvos = async () => {
+    try {
+      const emailSalvo = await AsyncStorage.getItem('@EventosBR:savedEmail');
+      const gravarSenhaSalvo = await AsyncStorage.getItem('@EventosBR:rememberEmail');
+
+      if (gravarSenhaSalvo === 'true' && emailSalvo) {
+        setEmail(emailSalvo);
+        setGravarSenha(true);
+      }
+    } catch (error) {
+      console.log('Erro ao carregar dados salvos:', error);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!email.trim() || !senha.trim()) {
+      Alert.alert('Atenção', 'Por favor, preencha o e-mail e a senha.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await api.post('/auth/login', {
+        email,
+        senha
+      });
+
+      const { token } = response.data;
+
+      // Salva o Token JWT na memória do aparelho
+      await AsyncStorage.setItem('@EventosBR:token', token);
+
+      // Tratamento da funcionalidade "Gravar Senha" / Lembrar E-mail
+      if (gravarSenha) {
+        await AsyncStorage.setItem('@EventosBR:savedEmail', email);
+        await AsyncStorage.setItem('@EventosBR:rememberEmail', 'true');
+      } else {
+        await AsyncStorage.removeItem('@EventosBR:savedEmail');
+        await AsyncStorage.setItem('@EventosBR:rememberEmail', 'false');
+      }
+
+      // Redireciona para a Home limpando o histórico para impedir navegação de volta via botão de voltar
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
+
+    } catch (error: any) {
+      // Adicione este console.log para ver o erro real no terminal do VS Code
+      console.log("ERRO DE LOGIN:", error.message, error.response?.data);
+
+      const mensagemErro = error.response?.data?.mensagem || 'Falha na conexão com o servidor.';
+      Alert.alert('Erro no Login', mensagemErro);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -86,9 +155,14 @@ export default function Login({ navigation }: Props) {
 
         <TouchableOpacity 
           style={styles.primaryButton} 
-          onPress={() => navigation.navigate('Home')}
+          onPress={handleLogin}
+          disabled={loading}
         >
-          <Text style={styles.primaryButtonText}>Entrar</Text>
+          {loading ? (
+            <ActivityIndicator color={colors.surface} />
+          ) : (
+            <Text style={styles.primaryButtonText}>Entrar</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity 
