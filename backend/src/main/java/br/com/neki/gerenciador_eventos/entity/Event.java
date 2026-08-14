@@ -26,5 +26,9 @@ public class Event {
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
+    @ManyToOne
+    @JoinColumn(name = "admin_id", nullable = false)
+    private Admin admin;
+
     private String imagemUrl;
 }

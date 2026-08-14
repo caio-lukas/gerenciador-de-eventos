@@ -38,14 +38,16 @@ export interface Evento {
   imagemUrl: string;
 }
 
-const formatarDataParaAPI = (d: Date) => {
-  const ano = d.getFullYear();
-  const mes = String(d.getMonth() + 1).padStart(2, '0');
-  const dia = String(d.getDate()).padStart(2, '0');
-  const hora = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  return `${ano}-${mes}-${dia}T${hora}:${min}:00`;
-};
+const formatarDataParaAPI = (data: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const ano = data.getFullYear();
+    const mes = pad(data.getMonth() + 1);
+    const dia = pad(data.getDate());
+    const hora = pad(data.getHours());
+    const minuto = pad(data.getMinutes());
+    
+    return `${ano}-${mes}-${dia}T${hora}:${minuto}:00`;
+  };
 
 const formatarDataVisao = (d: Date) => {
   const ano = d.getFullYear();
@@ -82,7 +84,7 @@ export default function Home({ navigation }: Props) {
   const [localizacao, setLocalizacao] = useState('');
   const [imagemUrl, setImagemUrl] = useState('');
 
-  // 2. Novos estados para gerenciar a Data e o Picker
+  // Novos estados para gerenciar a Data e o Picker
   const [dataEvento, setDataEvento] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
@@ -94,17 +96,61 @@ export default function Home({ navigation }: Props) {
   const buscarEventos = async () => {
     try {
       setLoadingEventos(true);
-      const response = await api.get('/eventos');
+      
+      const adminIdString = await AsyncStorage.getItem('@EventosBR:adminId');
+      const token = await AsyncStorage.getItem('@EventosBR:token');
+
+      console.log("TOKEN RECUPERADO DO STORAGE:", token);
+      
+      if (!adminIdString || !token) {
+        Toast.show({
+          type: 'error',
+          text1: 'Sessão inválida',
+          text2: 'Por favor, faça login novamente.'
+        });
+        setLoadingEventos(false);
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        return;
+      }
+
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      const response = await api.get(`/eventos/admin/${adminIdString}`);
+      
       setEventos(response.data);
     } catch (error: any) {
-      Toast.show({ type: 'error', text1: 'Erro de conexão', text2: 'Não foi possível carregar seus eventos.' });
+      console.log('Erro ao buscar eventos:', error.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Erro de conexão',
+        text2: 'Não foi possível carregar seus eventos.'
+      });
     } finally {
       setLoadingEventos(false);
     }
   };
 
+  const limparCampos = () => {
+    setNome('');
+    setDescricao('');
+    setLocalizacao('');
+    setImagemUrl('');
+    setDataEvento(new Date());
+    setModoEdicao(false);
+    setEventoSelecionadoId(null);
+  };
+
   const handleLogout = async () => {
+    // Remove o Token
     await AsyncStorage.removeItem('@EventosBR:token');
+    
+    // Remove o ID do Administrador
+    await AsyncStorage.removeItem('@EventosBR:adminId');
+    
+    // Limpa o cabeçalho do Axios
+    delete api.defaults.headers.common['Authorization'];
+
+    // Manda de volta para o Login
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
@@ -145,34 +191,56 @@ export default function Home({ navigation }: Props) {
 
   const salvarEvento = async () => {
     if (!nome.trim() || !descricao.trim() || !localizacao.trim()) {
-      Toast.show({ type: 'error', text1: 'Campos obrigatórios', text2: 'Preencha nome, descrição e localização.' });
+      Toast.show({
+        type: 'error',
+        text1: 'Campos obrigatórios',
+        text2: 'Preencha nome, descrição e localização.'
+      });
       return;
     }
 
     setSalvando(true);
 
     try {
+      // Resgata o ID do Admin salvo no momento do Login
+      const adminIdString = await AsyncStorage.getItem('@EventosBR:adminId');
+      
+      if (!adminIdString) {
+        Toast.show({ type: 'error', text1: 'Erro de Autenticação', text2: 'Faça login novamente.' });
+        setSalvando(false);
+        return;
+      }
+
       const payload = {
         nome,
         descricao,
         data: formatarDataParaAPI(dataEvento), 
         localizacao,
-        imagemUrl: imagemUrl || ''
+        imagemUrl: imagemUrl || '',
+        adminId: Number(adminIdString) // Envia o ID para vincular o evento
       };
 
+      // Decide se é Criação (POST) ou Edição (PUT)
       if (modoEdicao && eventoSelecionadoId) {
         await api.put(`/eventos/${eventoSelecionadoId}`, payload);
-        Toast.show({ type: 'success', text1: 'Atualizado!' });
+        Toast.show({ type: 'success', text1: 'Sucesso!', text2: 'Evento atualizado.' });
       } else {
         await api.post('/eventos', payload);
-        Toast.show({ type: 'success', text1: 'Criado!' });
+        Toast.show({ type: 'success', text1: 'Sucesso!', text2: 'Evento criado.' });
       }
 
+      // 5. Fecha o modal, limpa os campos e atualiza a lista
       setModalVisible(false);
+      limparCampos(); 
       buscarEventos(); 
+      
     } catch (error: any) {
-      console.log('Erro ao salvar evento:', error.message);
-      Toast.show({ type: 'error', text1: 'Erro ao salvar', text2: 'Verifique sua conexão e tente novamente.' });
+      console.log('Erro ao salvar evento:', error.message, error.response?.data);
+      Toast.show({
+        type: 'error',
+        text1: 'Erro ao salvar',
+        text2: 'Verifique os dados e tente novamente.'
+      });
     } finally {
       setSalvando(false);
     }
@@ -231,8 +299,8 @@ export default function Home({ navigation }: Props) {
     }
   };
 
-  // Verificação de Plataforma
   const excluirEvento = (id: number) => {
+    // Verificação de Plataforma
     if (Platform.OS === 'web') {
       const confirmacao = window.confirm("Tem certeza que deseja apagar este evento? Essa ação não pode ser desfeita.");
       if (confirmacao) {
@@ -259,7 +327,6 @@ export default function Home({ navigation }: Props) {
           <TouchableOpacity onPress={handleLogout}>
             <Feather name="log-out" size={24} color={colors.textMuted} style={{ marginRight: 15 }} />
           </TouchableOpacity>
-          <View style={styles.avatar}><Feather name="user" size={20} color={colors.surface} /></View>
         </View>
       </View>
 
@@ -268,6 +335,9 @@ export default function Home({ navigation }: Props) {
       ) : (
         <FlatList
           data={eventos}
+          key={Platform.OS === 'web' ? 'web-grid' : 'mobile-list'}
+          numColumns={Platform.OS === 'web' ? 3 : 1}
+          columnWrapperStyle={Platform.OS === 'web' ? { gap: 20, paddingBottom: 20 } : undefined}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderEvento}
           contentContainerStyle={styles.content}
@@ -295,22 +365,54 @@ export default function Home({ navigation }: Props) {
               
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{modoEdicao ? 'Editar Evento' : 'Adicionar Evento'}</Text>
-                <TouchableOpacity onPress={() => setModalVisible(false)}><Feather name="x-circle" size={24} color={colors.textMuted} /></TouchableOpacity>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <Feather name="x-circle" size={24} color={colors.textMuted} />
+                </TouchableOpacity>
               </View>
+
+              {modoEdicao && (
+                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 12 }}>
+                  Apenas data e localização podem ser alteradas após a criação do evento.
+                </Text>
+              )}
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>URL da Imagem de Capa</Text>
-                <TextInput style={styles.input} placeholder="Ex: https://site.com/imagem.jpg" placeholderTextColor={colors.placeholder} value={imagemUrl} onChangeText={setImagemUrl} autoCapitalize="none" />
+                <TextInput
+                  style={[styles.input, modoEdicao && styles.inputDisabled]}
+                  placeholder="Ex: https://site.com/imagem.jpg"
+                  placeholderTextColor={colors.placeholder}
+                  value={imagemUrl}
+                  onChangeText={setImagemUrl}
+                  autoCapitalize="none"
+                  editable={!modoEdicao}
+                />
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Nome do Evento</Text>
-                <TextInput style={styles.input} placeholder="Ex: Hackathon 2026" placeholderTextColor={colors.placeholder} value={nome} onChangeText={setNome} />
+                <TextInput
+                  style={[styles.input, modoEdicao && styles.inputDisabled]}
+                  placeholder="Ex: Hackathon 2026"
+                  placeholderTextColor={colors.placeholder}
+                  value={nome}
+                  onChangeText={setNome}
+                  editable={!modoEdicao}
+                />
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Descrição</Text>
-                <TextInput style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]} placeholder="Ex: Evento focado em..." placeholderTextColor={colors.placeholder} value={descricao} onChangeText={setDescricao} multiline={true} numberOfLines={3} />
+                <TextInput
+                  style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }, modoEdicao && styles.inputDisabled]}
+                  placeholder="Ex: Evento focado em..."
+                  placeholderTextColor={colors.placeholder}
+                  value={descricao}
+                  onChangeText={setDescricao}
+                  multiline={true}
+                  numberOfLines={3}
+                  editable={!modoEdicao}
+                />
               </View>
 
               {/* DatePicker */}

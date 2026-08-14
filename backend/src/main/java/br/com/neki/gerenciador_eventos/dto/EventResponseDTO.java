@@ -10,7 +10,8 @@ public record EventResponseDTO(
         LocalDateTime data,
         String localizacao,
         String descricao,
-        String imagemUrl
+        String imagemUrl,
+        Long adminId
 ) {
     public EventResponseDTO(Event event) {
         this(
@@ -19,7 +20,8 @@ public record EventResponseDTO(
                 event.getData(),
                 event.getLocalizacao(),
                 event.getDescricao(),
-                event.getImagemUrl()
+                event.getImagemUrl(),
+                event.getAdmin() != null ? event.getAdmin().getId() : null
         );
     }
 }

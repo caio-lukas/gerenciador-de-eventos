@@ -74,15 +74,22 @@ export default function Login({ navigation }: Props) {
     }
 
     setLoading(true);
-
-    try {
+    try{
       const response = await api.post('/auth/login', {
         email,
         senha
       });
 
-      const { token } = response.data;
+      const { token, id } = response.data; 
+
+      // Salva o token E o ID no AsyncStorage
       await AsyncStorage.setItem('@EventosBR:token', token);
+      
+      if (id) {
+        await AsyncStorage.setItem('@EventosBR:adminId', String(id));
+      } else {
+         console.warn("Atenção: O backend não devolveu o ID do admin!");
+      }
 
       // 3. Salva ou remove a senha dependendo do Switch
       if (gravarSenha) {

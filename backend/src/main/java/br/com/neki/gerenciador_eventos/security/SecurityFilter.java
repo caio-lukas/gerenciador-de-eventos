@@ -35,7 +35,7 @@ public class SecurityFilter extends OncePerRequestFilter {
                 Admin admin = adminRepository.findByEmail(email).orElse(null);
 
                 if (admin != null) {
-                    var authentication = new UsernamePasswordAuthenticationToken(admin, null, Collections.emptyList());
+                    var authentication = new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }

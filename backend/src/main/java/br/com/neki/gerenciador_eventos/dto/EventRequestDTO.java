@@ -7,6 +7,7 @@ public record EventRequestDTO (
         LocalDateTime data,
         String localizacao,
         String descricao,
-        String imagemUrl
+        String imagemUrl,
+        Long adminId
 ) {
 }

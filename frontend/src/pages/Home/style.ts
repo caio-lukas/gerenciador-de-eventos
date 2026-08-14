@@ -34,15 +34,7 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginRight: 10,
-    display: 'none', // Oculto em telas muito pequenas
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    display: 'none', 
   },
   // Corpo da página
   content: {
@@ -74,17 +66,25 @@ export const styles = StyleSheet.create({
   },
   // Card de Evento
   card: {
+    flex: Platform.OS === 'web' ? 1 : 0, 
+    minWidth: Platform.OS === 'web' ? 280 : '100%', 
+    maxWidth: Platform.OS === 'web' ? 400 : '100%', 
+    aspectRatio: Platform.OS === 'web' ? 1 : undefined, 
     backgroundColor: colors.surface,
     borderRadius: 12,
-    marginBottom: 20,
+    marginBottom: Platform.OS === 'web' ? 0 : 20, 
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   cardImage: {
     width: '100%',
-    height: 150,
-    backgroundColor: '#E0E0E0',
+    flex: Platform.OS === 'web' ? 1 : 0,
+    height: Platform.OS === 'web' ? undefined : 200, 
+    resizeMode: 'cover',
   },
   cardBody: {
     padding: 15,
@@ -160,6 +160,10 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: colors.textSecondary,
+  },
+    inputDisabled: {
+    backgroundColor: colors.disabledBackground || '#f0f0f0',
+    color: colors.textMuted,
   },
   modalSaveButton: {
     backgroundColor: colors.primary,
