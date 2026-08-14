@@ -22,6 +22,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import api from '../../services/api';
 import { colors } from '../../theme/colors';
 import { styles } from './style';
+import { useWindowDimensions } from 'react-native';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -71,6 +72,9 @@ const isoParaDate = (dataIso: string) => {
 };
 
 export default function Home({ navigation }: Props) {
+  const { width } = useWindowDimensions();
+  const isWideScreen = width >= 768;
+
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loadingEventos, setLoadingEventos] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -335,9 +339,9 @@ export default function Home({ navigation }: Props) {
       ) : (
         <FlatList
           data={eventos}
-          key={Platform.OS === 'web' ? 'web-grid' : 'mobile-list'}
-          numColumns={Platform.OS === 'web' ? 3 : 1}
-          columnWrapperStyle={Platform.OS === 'web' ? { gap: 20, paddingBottom: 20 } : undefined}
+          key={isWideScreen ? 'grid' : 'list'}
+          numColumns={isWideScreen ? 3 : 1}
+          columnWrapperStyle={isWideScreen ? { gap: 20, paddingBottom: 20 } : undefined}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderEvento}
           contentContainerStyle={styles.content}
