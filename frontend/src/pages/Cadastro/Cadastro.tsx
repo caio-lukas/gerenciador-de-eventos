@@ -6,11 +6,15 @@ import {
   TouchableOpacity, 
   KeyboardAvoidingView, 
   Platform,
-  ScrollView
+  ScrollView,
+  ActivityIndicator
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../App';
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Importante para salvar o token
+import Toast from 'react-native-toast-message'; // Importando o Toast
+import api from '../../services/api';
 import { colors } from '../../theme/colors';
 import { styles } from './style';
 
@@ -26,9 +30,90 @@ export default function Cadastro({ navigation }: Props) {
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   
-  // Estados independentes para exibir/ocultar cada campo de senha
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
+  
+  const [loading, setLoading] = useState(false);
+
+  const handleCadastro = async () => {
+    if (!nome.trim() || !email.trim() || !senha.trim() || !confirmarSenha.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Atenção',
+        text2: 'Por favor, preencha todos os campos.'
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Toast.show({
+        type: 'error',
+        text1: 'E-mail inválido',
+        text2: 'Por favor, insira um endereço de e-mail válido.'
+      });
+      return;
+    }
+
+    if (senha !== confirmarSenha) {
+      Toast.show({
+        type: 'error',
+        text1: 'Atenção',
+        text2: 'As senhas não coincidem.'
+      });
+      return;
+    }
+
+    if (senha.length < 8) {
+      Toast.show({
+        type: 'error',
+        text1: 'Atenção',
+        text2: 'A senha deve ter no mínimo 8 caracteres.'
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await api.post('/auth/register', {
+        nome,
+        email,
+        senha
+      });
+
+      const loginResponse = await api.post('/auth/login', {
+        email,
+        senha
+      });
+
+      const { token } = loginResponse.data;
+      await AsyncStorage.setItem('@EventosBR:token', token);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Bem-vindo!',
+        text2: 'Conta criada e login realizado com sucesso.'
+      });
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
+
+    } catch (error: any) {
+      console.log("ERRO DE CADASTRO:", error.message, error.response?.data);
+      const mensagemErro = error.response?.data?.mensagem || 'Erro ao realizar cadastro. Verifique os dados.';
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Ops!',
+        text2: mensagemErro
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -49,7 +134,7 @@ export default function Cadastro({ navigation }: Props) {
           </View>
 
           <Text style={styles.subtitle}>
-            Comece a organizar seus eventos corporativos e sociais hoje mesmo com a nossa plataforma.
+            Comece a organizar seus eventos corporativos e sociais hoje mesmo com a nossa plataforma moderna.
           </Text>
 
           <View style={styles.form}>
@@ -111,8 +196,16 @@ export default function Cadastro({ navigation }: Props) {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>Confirmar</Text>
+          <TouchableOpacity 
+            style={styles.primaryButton}
+            onPress={handleCadastro}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.surface} />
+            ) : (
+              <Text style={styles.primaryButtonText}>Confirmar</Text>
+            )}
           </TouchableOpacity>
 
           <View style={styles.footerTextContainer}>

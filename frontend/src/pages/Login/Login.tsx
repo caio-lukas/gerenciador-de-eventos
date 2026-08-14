@@ -163,11 +163,6 @@ export default function Login({ navigation }: Props) {
           ) : (
             <Text style={styles.primaryButtonText}>Entrar</Text>
           )}
-          {loading ? (
-            <ActivityIndicator color={colors.surface} />
-          ) : (
-            <Text style={styles.primaryButtonText}>Entrar</Text>
-          )}
         </TouchableOpacity>
 
         <TouchableOpacity 
