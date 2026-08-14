@@ -45,7 +45,7 @@ Projeto desenvolvido como Desafio de Residência.
 - Verificação de posse em toda operação sobre evento: cada administrador só consegue listar, editar ou excluir os **próprios** eventos, prevenindo acesso cruzado entre contas (proteção contra IDOR)
 - CORS configurado no Spring Security
 
-## 🗄️ Banco de Dados
+## Banco de Dados
 
 O PostgreSQL sobe via Docker Compose:
 
@@ -112,10 +112,10 @@ http://localhost:8080/swagger-ui.html
 
 > Espaço reservado para anotar próximos passos e pontos de evolução identificados durante o desenvolvimento.
 
-- [ O projeto verifica o id do administrador para gerenciar seu escopo; ainda assim, ele utiliza o LocalStorage por conveniência. Uma melhoria para a eficiência do código seria fazer a verificação exclusivamente pelo token, barrando qualquer tentativa de mexer com o LocalStorage. ] 
-- [ Para sistemas de login, a possibilidade de recuperar a senha da conta é sempre bem-vinda. Neste projeto, poderia ser implementada uma verificação por senha de uso único (OTP), que seria enviada ao e-mail cadastrado para possibilitar a troca da senha. ] 
-- [ Como extensão do item acima, poderia ser implementada uma validação de e-mail a fim de garantir que o e-mail utilizado exista (o sistema já checa se a estrutura do e-mail é válida). ] 
-- [ Para manter a simplicidade, optou-se por utilizar URLs de imagem em vez de arquivos em si. Contudo, haveriam maneiras de agregar a funcionalidade de submeter arquivos de imagem de forma direta na hora de cadastrar o evento, bem como armazená-las. ] 
+- O projeto verifica o id do administrador para gerenciar seu escopo; ainda assim, ele utiliza o LocalStorage por conveniência. Uma melhoria para a eficiência do código seria fazer a verificação exclusivamente pelo token, barrando qualquer tentativa de mexer com o LocalStorage.
+- Para sistemas de login, a possibilidade de recuperar a senha da conta é sempre bem-vinda. Neste projeto, poderia ser implementada uma verificação por senha de uso único (OTP), que seria enviada ao e-mail cadastrado para possibilitar a troca da senha.
+- Como extensão do item acima, poderia ser implementada uma validação de e-mail a fim de garantir que o e-mail utilizado exista (o sistema já checa se a estrutura do e-mail é válida).
+- Para manter a simplicidade, optou-se por utilizar URLs de imagem em vez de arquivos em si. Contudo, haveriam maneiras de agregar a funcionalidade de submeter arquivos de imagem de forma direta na hora de cadastrar o evento, bem como armazená-las.
 
 ## Autor
 
