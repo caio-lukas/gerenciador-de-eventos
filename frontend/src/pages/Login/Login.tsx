@@ -157,8 +157,6 @@ export default function Login({ navigation }: Props) {
           style={styles.primaryButton} 
           onPress={handleLogin}
           disabled={loading}
-          onPress={handleLogin}
-          disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color={colors.surface} />
