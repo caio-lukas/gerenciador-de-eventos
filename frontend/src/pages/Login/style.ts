@@ -129,4 +129,20 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  footerTextContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  footerText: {
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  footerTextLink: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: 'bold',
+    marginLeft: 4,
+  },
 });

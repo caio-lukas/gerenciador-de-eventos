@@ -7,13 +7,14 @@ import {
   KeyboardAvoidingView, 
   Platform,
   Switch,
-  Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../App';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 import api from '../../services/api';
 import { colors } from '../../theme/colors';
 import { styles } from './style';
@@ -31,7 +32,6 @@ export default function Login({ navigation }: Props) {
   const [gravarSenha, setGravarSenha] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Efeito para carregar dados salvos caso "Gravar Senha" tenha sido ativado previamente
   useEffect(() => {
     carregarDadosSalvos();
   }, []);
@@ -39,10 +39,13 @@ export default function Login({ navigation }: Props) {
   const carregarDadosSalvos = async () => {
     try {
       const emailSalvo = await AsyncStorage.getItem('@EventosBR:savedEmail');
-      const gravarSenhaSalvo = await AsyncStorage.getItem('@EventosBR:rememberEmail');
+      const senhaSalva = await AsyncStorage.getItem('@EventosBR:savedPassword');
+      const gravarSenhaSalvo = await AsyncStorage.getItem('@EventosBR:remember');
 
-      if (gravarSenhaSalvo === 'true' && emailSalvo) {
+      // Agora carrega tanto o e-mail quanto a senha
+      if (gravarSenhaSalvo === 'true' && emailSalvo && senhaSalva) {
         setEmail(emailSalvo);
+        setSenha(senhaSalva);
         setGravarSenha(true);
       }
     } catch (error) {
@@ -52,7 +55,21 @@ export default function Login({ navigation }: Props) {
 
   const handleLogin = async () => {
     if (!email.trim() || !senha.trim()) {
-      Alert.alert('Atenção', 'Por favor, preencha o e-mail e a senha.');
+      Toast.show({
+        type: 'error',
+        text1: 'Atenção',
+        text2: 'Por favor, preencha o e-mail e a senha.'
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Toast.show({
+        type: 'error',
+        text1: 'E-mail inválido',
+        text2: 'Insira um formato de e-mail válido.'
+      });
       return;
     }
 
@@ -65,33 +82,63 @@ export default function Login({ navigation }: Props) {
       });
 
       const { token } = response.data;
-
-      // Salva o Token JWT na memória do aparelho
       await AsyncStorage.setItem('@EventosBR:token', token);
 
-      // Tratamento da funcionalidade "Gravar Senha" / Lembrar E-mail
+      // 3. Salva ou remove a senha dependendo do Switch
       if (gravarSenha) {
         await AsyncStorage.setItem('@EventosBR:savedEmail', email);
-        await AsyncStorage.setItem('@EventosBR:rememberEmail', 'true');
+        await AsyncStorage.setItem('@EventosBR:savedPassword', senha);
+        await AsyncStorage.setItem('@EventosBR:remember', 'true');
       } else {
         await AsyncStorage.removeItem('@EventosBR:savedEmail');
-        await AsyncStorage.setItem('@EventosBR:rememberEmail', 'false');
+        await AsyncStorage.removeItem('@EventosBR:savedPassword');
+        await AsyncStorage.setItem('@EventosBR:remember', 'false');
       }
 
-      // Redireciona para a Home limpando o histórico para impedir navegação de volta via botão de voltar
+      Toast.show({
+        type: 'success',
+        text1: 'Olá!',
+        text2: 'Login realizado com sucesso.'
+      });
+
       navigation.reset({
         index: 0,
         routes: [{ name: 'Home' }],
       });
 
     } catch (error: any) {
-      // Adicione este console.log para ver o erro real no terminal do VS Code
       console.log("ERRO DE LOGIN:", error.message, error.response?.data);
-
-      const mensagemErro = error.response?.data?.mensagem || 'Falha na conexão com o servidor.';
-      Alert.alert('Erro no Login', mensagemErro);
+      Toast.show({
+        type: 'error',
+        text1: 'Erro ao entrar',
+        text2: error.response?.data?.mensagem || 'E-mail ou senha incorretos.'
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleGravarSenha = (valorNovo: boolean) => {
+    if (valorNovo === true) {
+      if (Platform.OS === 'web') {
+        const confirmacao = window.confirm(
+          "Aviso de Segurança:\n\nSalvar sua senha neste dispositivo pode permitir que outras pessoas acessem sua conta. Use isso apenas em dispositivos pessoais.\n\nDeseja continuar?"
+        );
+        if (confirmacao) {
+          setGravarSenha(true);
+        }
+      } else {
+        Alert.alert(
+          "Aviso de Segurança",
+          "Salvar sua senha neste dispositivo pode permitir que outras pessoas acessem sua conta. Use isso apenas em dispositivos pessoais.\n\nDeseja continuar?",
+          [
+            { text: "Cancelar", style: "cancel" },
+            { text: "Sim, continuar", onPress: () => setGravarSenha(true) }
+          ]
+        );
+      }
+    } else {
+      setGravarSenha(false);
     }
   };
 
@@ -145,7 +192,7 @@ export default function Login({ navigation }: Props) {
           <View style={styles.switchContainer}>
             <Switch
               value={gravarSenha}
-              onValueChange={setGravarSenha}
+              onValueChange={handleToggleGravarSenha}
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor={Platform.OS === 'android' ? colors.surface : ''}
             />
@@ -170,10 +217,6 @@ export default function Login({ navigation }: Props) {
           onPress={() => navigation.navigate('Cadastro')}
         >
           <Text style={styles.secondaryButtonText}>Cadastrar</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.forgotPasswordButton}>
-          <Text style={styles.forgotPasswordText}>Esqueceu sua senha?</Text>
         </TouchableOpacity>
 
       </View>
